@@ -1,2 +1,7 @@
 node_modules/
-
+full-vip-pro/
+watch-4k/
+airysat/
+*.m3u*
+logs.txt
+properties.json

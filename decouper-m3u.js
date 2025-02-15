@@ -7,7 +7,7 @@ if (process.argv.length < 3) {
 }
 
 const inputFile = process.argv[2];
-const outputDir = path.join(__dirname, 'full-vip-pro');
+const outputDir = path.join(__dirname, inputFile.replace(/\.m3u*/, ''));
 
 // Créer le dossier de sortie s'il n'existe pas
 if (!fs.existsSync(outputDir)) {
@@ -27,7 +27,8 @@ for (let i = 0; i < lines.length; i++) {
         // Extraire le group-title
         const match = line.match(/group-title="([^"]+)"/);
         if (match) {
-            currentGroup = match[1].replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, ''); // Remplacer tous les caractères spéciaux par _ et éviter les _ successifs
+            // Remplacer tous les caractères spéciaux par _ et éviter les _ successifs
+            currentGroup = match[1].replace(/[\/\\?%*:|"<>]+/g, '_').replace(/^_+|_+$/g, ''); 
             currentFile = path.join(outputDir, `${currentGroup}.m3u`);
         }
         
