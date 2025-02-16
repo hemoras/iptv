@@ -1,6 +1,7 @@
 [
     {
         "abonnement": "full-vip-pro",
+        "expiration": "13/02/2026",
         "chaines": {
             "C+UHD": "http://fullvippro.net:8080/15354sss1202/fRZ6EsN/621044",
             "C+": "http://fullvippro.net:8080/15354sss1202/fRZ6EsN/620959",
@@ -12,11 +13,37 @@
         }
     },
     {
+        "abonnement": "watch-4k",
+        "expiration": "09/05/2025",
+        "chaines": {
+            "C+": "http://641212615644.d4ktv.info:80/aqqma8a6xa/jaefolig9v/275682",
+            "C+Sport": "http://641212615644.d4ktv.info:80/aqqma8a6xa/jaefolig9v/250679",
+            "C+Sport360": "http://641212615644.d4ktv.info:80/aqqma8a6xa/jaefolig9v/256628",
+			"C+Live1": "http://641212615644.d4ktv.info:80/aqqma8a6xa/jaefolig9v/1122056",
+			"C+Live2": "http://641212615644.d4ktv.info:80/aqqma8a6xa/jaefolig9v/1122022",
+			"C+Live3": "http://641212615644.d4ktv.info:80/aqqma8a6xa/jaefolig9v/1122024",
+            "SkyF1Uk": "http://641212615644.d4ktv.info:80/aqqma8a6xa/jaefolig9v/138141",
+            "LaUne": "http://641212615644.d4ktv.info:80/aqqma8a6xa/jaefolig9v/91837",
+            "tipik": "http://641212615644.d4ktv.info:80/aqqma8a6xa/jaefolig9v/472",
+            "RTSUn": "http://641212615644.d4ktv.info:80/aqqma8a6xa/jaefolig9v/43951",
+            "RTSDeux": "http://641212615644.d4ktv.info:80/aqqma8a6xa/jaefolig9v/43952"
+        }
+    },
+    {
         "abonnement": "airysat",
+        "expiration": "30/09/2025",
         "chaines": {
             "C+": "http://privastreet.com:80/51039cmv3009/gnrStce/10622",
+            "C+Sport": "http://privastreet.com:80/51039cmv3009/gnrStce/10620",
+            "C+Sport360": "http://privastreet.com:80/51039cmv3009/gnrStce/363",
 			"C+Live1": "http://privastreet.com:80/51039cmv3009/gnrStce/149656",
-			"C+Live2": "http://privastreet.com:80/51039cmv3009/gnrStce/147704"		
+			"C+Live2": "http://privastreet.com:80/51039cmv3009/gnrStce/147704",
+			"C+Live3": "http://privastreet.com:80/51039cmv3009/gnrStce/147705",
+            "SkyF1Uk": "http://641212615644.d4ktv.info:80/aqqma8a6xa/jaefolig9v/138141",
+            "LaUne": "http://privastreet.com:80/51039cmv3009/gnrStce/3854",
+            "tipik": "http://privastreet.com:80/51039cmv3009/gnrStce/3853",
+            "RTSUn": "http://privastreet.com:80/51039cmv3009/gnrStce/5829",
+            "RTSDeux": "http://privastreet.com:80/51039cmv3009/gnrStce/5830"		
         }
     }
 ]
