@@ -159,5 +159,4 @@ if (!nom_fichier) {
     [date_debut, date_fin, chaine, nom_fichier] = process.argv.slice(2);
     abonnement = abonnementPrincipal;
 }
-log('abonnement='+abonnement);
 enregistrerIptv(abonnement, date_debut, date_fin, chaine, nom_fichier);

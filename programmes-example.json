@@ -1,0 +1,17 @@
+{
+    "programmes": [
+        {
+            "date_debut": "2025-02-16 17:40:00",
+            "date_fin": "2025-02-18 17:50:00",
+            "chaine": "C+Sport360",
+            "nom_fichier": "Test.ts",
+            "abonnement": "airysat"
+        },
+		{
+            "date_debut": "2025-02-18 20:40:00",
+            "date_fin": "2025-02-18 23:15:00",
+            "chaine": "C+Sport360",
+            "nom_fichier": "Présentation Saison 2025 (Canal+ Sport 360).ts"
+        }
+    ]
+}

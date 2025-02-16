@@ -8,14 +8,14 @@ function lireProperties() {
         return JSON.parse(data);
     } catch (error) {
         console.error("Erreur de lecture du fichier de propriétés :", error);
-        return { cheminProgrammations: './' }; // Valeur par défaut si le fichier est introuvable
+        return { cheminProgrammations: './', abonnementPrincipal: 'airysat' }; // Valeurs par défaut
     }
 }
 
 // Charger le chemin des enregistrements depuis properties.json
-const { cheminProgrammations } = lireProperties();
+const { cheminProgrammations, abonnementPrincipal } = lireProperties();
 const PROGRAM_FILE = `${cheminProgrammations}/programmes.json`;
-const CHECK_INTERVAL = 60 * 1000; // Vérification toutes les 5 secondes
+const CHECK_INTERVAL = 10 * 1000; // Vérification toutes les 10 secondes
 
 // Stocke les enregistrements déjà lancés pour éviter les doublons
 const enregistrementsLances = new Set();
@@ -39,7 +39,7 @@ function sauvegarderProgrammes(programmes) {
 }
 
 function lancerEnregistrement(programme) {
-    const { date_debut, date_fin, chaine, nom_fichier, abonnement = 'airysat' } = programme; // "airysat" par défaut si absent
+    const { date_debut, date_fin, chaine, nom_fichier, abonnement = abonnementPrincipal } = programme; // "airysat" par défaut si absent
     console.log(`Démarrage de l'enregistrement : ${chaine} -> ${nom_fichier} (Abonnement: ${abonnement})`);
 
     const process = spawn('node', ['enregistrer-iptv.js', abonnement, date_debut, date_fin, chaine, nom_fichier], {
