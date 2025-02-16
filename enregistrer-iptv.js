@@ -14,12 +14,12 @@ function lireProperties() {
 }
 
 // Récupérer les chemins depuis properties.json
-const { cheminEnregistrements, cheminProgrammations } = lireProperties();
+const { cheminEnregistrements, cheminProgrammations, abonnementPrincipal  } = lireProperties();
 const PROGRAM_FILE = `${cheminProgrammations}/programmes.json`;
 
 // Fonction pour ajouter des logs avec la date
 function log(message) {
-    const date = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const date = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }).replace(',', '');
     const logMessage = `[${date}] ${message}\n`;
     fs.appendFileSync('logs.txt', logMessage);
 }
@@ -36,35 +36,20 @@ function chargerChaines() {
 }
 
 // Fonction principale pour enregistrer le flux IPTV
-function enregistrerIptv(abonnement = 'airysat', date_debut, date_fin, chaine, nom_fichier) {
+function enregistrerIptv(abonnement = abonnementPrincipal, date_debut, date_fin, chaine, nom_fichier) {
     const dateDebut = new Date(date_debut);
     const dateFin = new Date(date_fin);
     const now = new Date();
     let dureeRestante = Math.floor((dateFin.getTime() - now.getTime()) / 1000);
-
-    if (dureeRestante <= 0) {
-        log(`Suppression d'un enregistrement invalide : ${JSON.stringify({ abonnement, date_debut, date_fin, chaine, nom_fichier })}`);
-        supprimerEnregistrement(date_debut, date_fin, chaine, nom_fichier);
-        return;
-    }
 
     if (dateDebut > now) {
         const delay = dateDebut - now;
         log(`Le flux pour ${chaine} commencera dans ${delay / 1000} secondes.`);
         setTimeout(() => startRecording(abonnement, dureeRestante, chaine, nom_fichier), delay);
     } else {
-        log(`Le flux pour ${chaine} commence directement`);
+        log(`Démarrage enregistrement de ${chaine} sur ${abonnement}`);
         startRecording(abonnement, dureeRestante, chaine, nom_fichier);
     }
-}
-
-// Fonction pour supprimer un enregistrement du JSON
-function supprimerEnregistrement(date_debut, date_fin, chaine, nom_fichier) {
-    let programmes = lireProgrammes();
-    programmes = programmes.filter(prog =>
-        !(prog.date_debut === date_debut && prog.date_fin === date_fin && prog.chaine === chaine && prog.nom_fichier === nom_fichier)
-    );
-    sauvegarderProgrammes(programmes);
 }
 
 // Fonction pour démarrer l'enregistrement avec relance automatique
@@ -103,6 +88,12 @@ function startRecording(abonnement, dureeRestante, chaine, nom_fichier) {
     const ffmpegProcess = spawn(recordCommand, ffmpegArgs, {
         detached: true,
         stdio: 'ignore',
+    });
+
+    process.on('SIGINT', () => {
+        log(`Interruption par l'utilisateur. Arrêt du processus ffmpeg...`);
+        ffmpegProcess.kill('SIGINT');  // Envoie un signal SIGINT à ffmpeg pour l'arrêter proprement
+        process.exit();  // Quitte le script proprement
     });
 
     ffmpegProcess.on('exit', (code) => {
@@ -145,5 +136,28 @@ function getUniqueFilename(directory, filename) {
 }
 
 // Exécution avec les paramètres en argument
-const [abonnement = 'airysat', date_debut, date_fin, chaine, nom_fichier] = process.argv.slice(2);
+let [abonnement, date_debut, date_fin, chaine, nom_fichier] = process.argv.slice(2);
+// Si un seul argument, seule la chaine est spécifiée
+if (!date_debut) {
+    [chaine] = process.argv.slice(2);
+    date_debut = new Date();
+    date_fin = new Date(date_debut.getTime() + 3 * 60 * 60 * 1000);
+    abonnement = abonnementPrincipal;
+    const dateString = date_debut.toLocaleString('fr-FR', {
+        timeZone: 'Europe/Paris', 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit', 
+        hour: '2-digit', 
+        minute: '2-digit'
+    }).replace(/\//g, '-').replace(/:/g, '').replace(' ', '_');
+    
+    nom_fichier = `${dateString}_${chaine}.ts`;
+}
+// Si 4 arguments, l'abonnement n'est pas spécifié
+if (!nom_fichier) {
+    [date_debut, date_fin, chaine, nom_fichier] = process.argv.slice(2);
+    abonnement = abonnementPrincipal;
+}
+log('abonnement='+abonnement);
 enregistrerIptv(abonnement, date_debut, date_fin, chaine, nom_fichier);

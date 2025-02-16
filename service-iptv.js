@@ -57,16 +57,18 @@ function verifierProgrammes() {
     let programmesMisAJour = programmes.filter(programme => {
         const dateDebut = new Date(programme.date_debut);
         const dateFin = new Date(programme.date_fin);
-        const dateExpiration = new Date(dateFin.getTime() + 5 * 24 * 60 * 60 * 1000);
         const idProgramme = `${programme.chaine}-${programme.date_debut}-${programme.date_fin}`;
 
         // Lancer l'enregistrement si la date de début est atteinte et qu'il n'a pas encore été lancé
-        if (maintenant >= dateDebut && !enregistrementsLances.has(idProgramme)) {
+        if (dateFin > maintenant && maintenant >= dateDebut && !enregistrementsLances.has(idProgramme)) {
             lancerEnregistrement(programme);
             enregistrementsLances.add(idProgramme); // Marquer comme lancé
         }
+        if (dateFin < maintenant) {
+            log(`Suppression d'une programmation passée : ` + JSON.stringify(programme));
+        }
 
-        return maintenant < dateExpiration; // Conserver si non expiré
+        return dateFin > maintenant; // Conserver si non expiré
     });
 
     if (JSON.stringify(programmesMisAJour) !== JSON.stringify(programmes)) {
@@ -74,5 +76,21 @@ function verifierProgrammes() {
     }
 }
 
+function log(message) {
+    const date = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }).replace(',', '');
+    const logMessage = `[${date}] ${message}\n`;
+    fs.appendFileSync('logs.txt', logMessage);
+}
+
+function arreterService(signal) {
+    log(`Arrêt du service IPTV (Signal: ${signal})`);
+    console.log("Arrêt du service IPTV...");
+    process.exit(0);
+}
+
 setInterval(verifierProgrammes, CHECK_INTERVAL);
+log(`Démarrage du service IPTV`);
 console.log("Service IPTV en cours d'exécution...");
+
+process.on('SIGINT', () => arreterService('SIGINT'));  // Interruption (Ctrl + C)
+process.on('SIGTERM', () => arreterService('SIGTERM')); // Arrêt système

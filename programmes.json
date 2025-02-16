@@ -1,13 +1,6 @@
 {
     "programmes": [
         {
-            "date_debut": "2025-02-16 00:15:00",
-            "date_fin": "2025-02-16 01:40:00",
-            "chaine": "C+Live1",
-            "nom_fichier": "06 GP Test 2025 (Canal+).ts",
-			"abonnement": "airysat"
-        },
-        {
             "date_debut": "2025-02-18 20:40:00",
             "date_fin": "2025-02-18 23:15:00",
             "chaine": "C+Sport360",
