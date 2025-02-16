@@ -15,7 +15,7 @@ function lireProperties() {
 // Charger le chemin des enregistrements depuis properties.json
 const { cheminProgrammations } = lireProperties();
 const PROGRAM_FILE = `${cheminProgrammations}/programmes.json`;
-const CHECK_INTERVAL = 5 * 1000; // Vérification toutes les 5 secondes
+const CHECK_INTERVAL = 60 * 1000; // Vérification toutes les 5 secondes
 
 // Stocke les enregistrements déjà lancés pour éviter les doublons
 const enregistrementsLances = new Set();
