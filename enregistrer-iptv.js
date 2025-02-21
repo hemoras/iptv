@@ -36,7 +36,7 @@ function chargerChaines() {
 }
 
 // Fonction principale pour enregistrer le flux IPTV
-function enregistrerIptv(abonnement = abonnementPrincipal, date_debut, date_fin, chaine, nom_fichier) {
+async function enregistrerIptv(abonnement = abonnementPrincipal, date_debut, date_fin, chaine, nom_fichier) {
     const dateDebut = new Date(date_debut);
     const dateFin = new Date(date_fin);
     const now = new Date();
@@ -135,28 +135,55 @@ function getUniqueFilename(directory, filename) {
     return newFilename;
 }
 
-// Exécution avec les paramètres en argument
-let [abonnement, date_debut, date_fin, chaine, nom_fichier] = process.argv.slice(2);
-// Si un seul argument, seule la chaine est spécifiée
-if (!date_debut) {
-    [chaine] = process.argv.slice(2);
-    date_debut = new Date();
-    date_fin = new Date(date_debut.getTime() + 3 * 60 * 60 * 1000);
-    abonnement = abonnementPrincipal;
-    const dateString = date_debut.toLocaleString('fr-FR', {
-        timeZone: 'Europe/Paris', 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit', 
-        hour: '2-digit', 
-        minute: '2-digit'
-    }).replace(/\//g, '-').replace(/:/g, '').replace(' ', '_');
-    
-    nom_fichier = `${dateString}_${chaine}.ts`;
+async function enregistrerSamples() {
+    const chaines = chargerChaines();    
+
+    for (const abonnementData of chaines) {
+        const abonnement = abonnementData.abonnement;
+        for (const [chaine, url] of Object.entries(abonnementData.chaines)) {
+            const now = new Date();
+            const dateDebut = new Date(now);
+            const dateFin = new Date(now.getTime() + 10 * 1000); // +10 secondes
+            const nom_fichier = `${abonnement}-${chaine}-${url.split('/').pop()}.ts`;
+            console.log(`Enregistrement de [${abonnement}] ${chaine} (id = ${url.split('/').pop()})`);
+            await enregistrerIptv(abonnement, dateDebut, dateFin, chaine, "samples/"+nom_fichier);
+            
+            // Attendre 10 secondes avant de passer à la prochaine chaîne
+            await new Promise(resolve => setTimeout(resolve, 5 * 1000));
+        }
+    }
 }
-// Si 4 arguments, l'abonnement n'est pas spécifié
-if (!nom_fichier) {
-    [date_debut, date_fin, chaine, nom_fichier] = process.argv.slice(2);
-    abonnement = abonnementPrincipal;
+
+main();
+
+async function main() {
+    // Exécution avec les paramètres en argument
+    let [abonnement, date_debut, date_fin, chaine, nom_fichier] = process.argv.slice(2);
+    if (process.argv.length === 3 && process.argv[2] === "samples") {
+        await enregistrerSamples().then(() => log("Tous les samples ont été enregistrés."));
+        process.exit(0);
+    }
+    // Si un seul argument, seule la chaine est spécifiée
+    if (!date_debut) {
+        [chaine] = process.argv.slice(2);
+        date_debut = new Date();
+        date_fin = new Date(date_debut.getTime() + 3 * 60 * 60 * 1000);
+        abonnement = abonnementPrincipal;
+        const dateString = date_debut.toLocaleString('fr-FR', {
+            timeZone: 'Europe/Paris', 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit'
+        }).replace(/\//g, '-').replace(/:/g, '').replace(' ', '_');
+        
+        nom_fichier = `${dateString}_${chaine}.ts`;
+    }
+    // Si 4 arguments, l'abonnement n'est pas spécifié
+    if (!nom_fichier) {
+        [date_debut, date_fin, chaine, nom_fichier] = process.argv.slice(2);
+        abonnement = abonnementPrincipal;
+    }
+    enregistrerIptv(abonnement, date_debut, date_fin, chaine, nom_fichier);
 }
-enregistrerIptv(abonnement, date_debut, date_fin, chaine, nom_fichier);
