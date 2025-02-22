@@ -135,21 +135,23 @@ function getUniqueFilename(directory, filename) {
     return newFilename;
 }
 
-async function enregistrerSamples() {
+async function enregistrerSamples(abonnementSpecifique = null) {
     const chaines = chargerChaines();    
 
     for (const abonnementData of chaines) {
         const abonnement = abonnementData.abonnement;
-        for (const [chaine, url] of Object.entries(abonnementData.chaines)) {
-            const now = new Date();
-            const dateDebut = new Date(now);
-            const dateFin = new Date(now.getTime() + 10 * 1000); // +10 secondes
-            const nom_fichier = `${abonnement}-${chaine}-${url.split('/').pop()}.ts`;
-            console.log(`Enregistrement de [${abonnement}] ${chaine} (id = ${url.split('/').pop()})`);
-            await enregistrerIptv(abonnement, dateDebut, dateFin, chaine, "samples/"+nom_fichier);
-            
-            // Attendre 10 secondes avant de passer à la prochaine chaîne
-            await new Promise(resolve => setTimeout(resolve, 5 * 1000));
+        if (abonnementSpecifique === null || abonnementSpecifique === abonnement) {
+            for (const [chaine, url] of Object.entries(abonnementData.chaines)) {
+                const now = new Date();
+                const dateDebut = new Date(now);
+                const dateFin = new Date(now.getTime() + 10 * 1000); // +10 secondes
+                const nom_fichier = `${abonnement}-${chaine}-${url.split('/').pop()}.ts`;
+                console.log(`Enregistrement de [${abonnement}] ${chaine} (id = ${url.split('/').pop()})`);
+                await enregistrerIptv(abonnement, dateDebut, dateFin, chaine, "samples/"+nom_fichier);
+                
+                // Attendre 10 secondes avant de passer à la prochaine chaîne
+                await new Promise(resolve => setTimeout(resolve, 5 * 1000));
+            }    
         }
     }
 }
@@ -161,6 +163,10 @@ async function main() {
     let [abonnement, date_debut, date_fin, chaine, nom_fichier] = process.argv.slice(2);
     if (process.argv.length === 3 && process.argv[2] === "samples") {
         await enregistrerSamples().then(() => log("Tous les samples ont été enregistrés."));
+        process.exit(0);
+    }
+    if (process.argv.length === 4 && process.argv[2] === "samples") {
+        await enregistrerSamples(process.argv[3]).then(() => log("Tous les samples ont été enregistrés."));
         process.exit(0);
     }
     // Si un seul argument, seule la chaine est spécifiée
