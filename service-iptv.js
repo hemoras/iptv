@@ -13,12 +13,13 @@ function lireProperties() {
 }
 
 // Charger le chemin des enregistrements depuis properties.json
-const { cheminProgrammations, abonnementPrincipal } = lireProperties();
+const { cheminEnregistrements, cheminProgrammations, abonnementPrincipal } = lireProperties();
 const PROGRAM_FILE = `${cheminProgrammations}/programmes.json`;
 const CHECK_INTERVAL = 10 * 1000; // Vérification toutes les 10 secondes
 
 // Stocke les enregistrements déjà lancés pour éviter les doublons
 const enregistrementsLances = new Set();
+const processusEnfants = new Set();
 
 function lireProgrammes() {
     try {
@@ -39,16 +40,19 @@ function sauvegarderProgrammes(programmes) {
 }
 
 function lancerEnregistrement(programme) {
-    const { date_debut, date_fin, chaine, nom_fichier, abonnement = abonnementPrincipal } = programme; // "airysat" par défaut si absent
-    console.log(`Démarrage de l'enregistrement : ${chaine} -> ${nom_fichier} (Abonnement: ${abonnement})`);
+    let { date_debut, date_fin, chaine, nom_fichier, abonnement } = programme;
+    if (!abonnement) abonnement = abonnementPrincipal;
+    console.log(`Démarrage de l'enregistrement : ${chaine} -> ${nom_fichier}`);
 
-    const process = spawn('node', ['enregistrer-iptv.js', abonnement, date_debut, date_fin, chaine, nom_fichier], {
-        detached: true,
+    const child = spawn('node', ['enregistrer-iptv.js', abonnement, date_debut, date_fin, chaine, nom_fichier], {
+        detached: true,   // 🔥 Détache pour éviter que l'arrêt du parent tue directement l'enfant
         stdio: 'ignore'
     });
 
-    process.unref();
+    processusEnfants.add(child.pid);
+    child.unref(); // Empêche le parent d'attendre la fin du processus enfant
 }
+
 
 function verifierProgrammes() {
     const programmes = lireProgrammes();
@@ -82,9 +86,22 @@ function log(message) {
     fs.appendFileSync('logs.txt', logMessage);
 }
 
+// Fonction pour tuer proprement tous les processus enfants
 function arreterService(signal) {
     log(`Arrêt du service IPTV (Signal: ${signal})`);
-    console.log("Arrêt du service IPTV...");
+
+    for (const pid of processusEnfants) {
+        try {
+            log(`Envoi du signal SIGTERM au process : ${pid}`);
+            process.kill(pid, 'SIGTERM');
+        } catch (err) {
+            if (err.code !== 'ESRCH') {
+                log(`Erreur lors de l'arrêt du processus ${pid} : ${err.message}`);
+            }
+        }
+    }
+
+    log("Arrêt du service IPTV terminé.");
     process.exit(0);
 }
 
@@ -92,5 +109,5 @@ setInterval(verifierProgrammes, CHECK_INTERVAL);
 log(`Démarrage du service IPTV`);
 console.log("Service IPTV en cours d'exécution...");
 
-process.on('SIGINT', () => arreterService('SIGINT'));  // Interruption (Ctrl + C)
-process.on('SIGTERM', () => arreterService('SIGTERM')); // Arrêt système
+process.on('SIGINT', () => arreterService('SIGINT'));
+process.on('SIGTERM', () => arreterService('SIGTERM'));

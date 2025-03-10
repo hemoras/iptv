@@ -2,6 +2,14 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
+const ffmpegProcesses = new Set();
+const retryDelays = [0, 2, 5, 10, 30, 60]; // Délais en secondes
+const retryCounters = new Map(); // Stocke les échecs successifs par chaîne
+
+if (process.setpgrp) {
+    process.setpgrp(); // 🔥 Place le script dans un groupe de processus
+}
+
 // Charger les propriétés depuis properties.json
 function lireProperties() {
     try {
@@ -59,6 +67,12 @@ function startRecording(abonnement, dureeRestante, chaine, nom_fichier) {
         return;
     }
 
+    if (!retryCounters.has(chaine)) {
+        retryCounters.set(chaine, 0);
+    }
+
+    const retryCount = retryCounters.get(chaine);
+
     // Charger les chaînes IPTV
     const chaines = chargerChaines();
     const abonnementData = chaines.find(a => a.abonnement === abonnement);
@@ -82,7 +96,7 @@ function startRecording(abonnement, dureeRestante, chaine, nom_fichier) {
     // Lancer ffmpeg
     const recordCommand = 'ffmpeg';
     const ffmpegArgs = ['-i', lien, '-t', dureeRestante.toString(), '-c', 'copy', cheminFichier];
-    log(`Exécution de la commande ffmpeg : ${recordCommand} ${ffmpegArgs.join(' ')}`);
+    log(`Exécution de la commande ffmpeg : ${recordCommand} ${ffmpegArgs.join(' ')} (tentative ${retryCount})`);
 
     const startTime = Date.now();
     const ffmpegProcess = spawn(recordCommand, ffmpegArgs, {
@@ -90,11 +104,8 @@ function startRecording(abonnement, dureeRestante, chaine, nom_fichier) {
         stdio: 'ignore',
     });
 
-    process.on('SIGINT', () => {
-        log(`Interruption par l'utilisateur. Arrêt du processus ffmpeg...`);
-        ffmpegProcess.kill('SIGINT');  // Envoie un signal SIGINT à ffmpeg pour l'arrêter proprement
-        process.exit();  // Quitte le script proprement
-    });
+    // Ajouter le processus à la liste des processus actifs
+    ffmpegProcesses.add(ffmpegProcess);
 
     ffmpegProcess.on('exit', (code) => {
         const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
@@ -107,9 +118,25 @@ function startRecording(abonnement, dureeRestante, chaine, nom_fichier) {
             log(`Erreur lors de l'enregistrement du fichier ${nomFichierUnique}.`);
         }
 
+        // Retirer le processus terminé de la liste
+        ffmpegProcesses.delete(ffmpegProcess);
+        log(`tempsRestant=${tempsRestant}, elapsedTime=${elapsedTime}, dureeRestante=${dureeRestante}, chaine=${chaine}, abonnement=${abonnement}, nom_fichier=${nom_fichier}, retryCount=${retryCount}, retryDelays size=${retryDelays.length}`);
         if (tempsRestant > 80) {
             log(`Anomalie détectée : l'enregistrement a été interrompu prématurément (${elapsedTime}s au lieu de ${dureeRestante}s). Relance...`);
-            startRecording(abonnement, tempsRestant, chaine, nom_fichier);
+            if (elapsedTime > 10) {
+                log(`Réinitialisation du compteur de retry pour ${chaine}.`);
+                retryCounters.set(chaine, 0);
+                startRecording(abonnement, tempsRestant, chaine, nom_fichier);
+            } else {
+                let nextRetry = retryDelays[Math.min(retryCount, retryDelays.length - 1)];
+                log(`⚠️ Échec rapide détecté pour ${chaine} (${elapsedTime}s). Nouvelle tentative dans ${nextRetry}s.`);
+    
+                retryCounters.set(chaine, retryCount + 1);
+    
+                setTimeout(() => {
+                    startRecording(abonnement, tempsRestant, chaine, nom_fichier);
+                }, nextRetry * 1000);
+            }
         } else {
             log(`Enregistrement terminé correctement pour ${chaine}.`);
         }
@@ -193,3 +220,26 @@ async function main() {
     }
     enregistrerIptv(abonnement, date_debut, date_fin, chaine, nom_fichier);
 }
+
+// Gestion de l'arrêt du service IPTV
+function arreterService(signal) {
+    log(`Arrêt de l'enregistrement IPTV (Signal: ${signal})`);
+
+    // Tuer tous les processus ffmpeg actifs
+    for (const process of ffmpegProcesses) {
+        process.kill('SIGINT');
+    }
+
+    log("Arrêt de l'enregistrement IPTV...");
+    process.exit(0);
+}
+
+process.on('SIGINT', () => {
+    log("⚠️ Signal SIGINT reçu dans enregistrer-iptv.js !");
+    arreterService('SIGINT');
+});
+
+process.on('SIGTERM', () => {
+    log("⚠️ Signal SIGTERM reçu dans enregistrer-iptv.js !");
+    arreterService('SIGTERM');
+});
