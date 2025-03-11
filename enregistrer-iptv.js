@@ -120,11 +120,9 @@ function startRecording(abonnement, dureeRestante, chaine, nom_fichier) {
 
         // Retirer le processus terminé de la liste
         ffmpegProcesses.delete(ffmpegProcess);
-        log(`tempsRestant=${tempsRestant}, elapsedTime=${elapsedTime}, dureeRestante=${dureeRestante}, chaine=${chaine}, abonnement=${abonnement}, nom_fichier=${nom_fichier}, retryCount=${retryCount}, retryDelays size=${retryDelays.length}`);
         if (tempsRestant > 80) {
             log(`Anomalie détectée : l'enregistrement a été interrompu prématurément (${elapsedTime}s au lieu de ${dureeRestante}s). Relance...`);
             if (elapsedTime > 10) {
-                log(`Réinitialisation du compteur de retry pour ${chaine}.`);
                 retryCounters.set(chaine, 0);
                 startRecording(abonnement, tempsRestant, chaine, nom_fichier);
             } else {
