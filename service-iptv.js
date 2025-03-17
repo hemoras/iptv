@@ -6,6 +6,7 @@ const CHECK_INTERVAL = 10 * 1000;
 const ffmpegProcesses = new Set();
 const enregistrementsLances = new Set();
 const retryDelays = [0, 2, 5, 10, 30, 60]; // Délais en secondes
+//const retryDelays = [0, 2, 3, 4, 5, 6]; // Délais en secondes
 const retryCounters = new Map(); // Stocke les échecs successifs par chaîne
 
 function lireProperties() {
@@ -83,7 +84,7 @@ function getUniqueFilename(directory, filename) {
     return newFilename;
 }
 
-function startRecording(abonnement, dureeRestante, chaine, nom_fichier, dateFin) {
+function startRecording(abonnement, dureeRestante, chaine, nom_fichier, dateFin, liste = "chaines") {
     if (dureeRestante <= 0) {
         log(`Enregistrement terminé pour ${chaine} après plusieurs tentatives.`);
         return;
@@ -104,7 +105,7 @@ function startRecording(abonnement, dureeRestante, chaine, nom_fichier, dateFin)
         return;
     }
 
-    const lien = abonnementData.chaines[chaine];
+    const lien = abonnementData[liste][chaine];
 
     // Vérifier si le dossier d'enregistrement existe, sinon le créer
     if (!fs.existsSync(cheminEnregistrements)) {
@@ -144,20 +145,30 @@ function startRecording(abonnement, dureeRestante, chaine, nom_fichier, dateFin)
         ffmpegProcesses.delete(ffmpegProcess);
         if (tempsRestant > 30) {
             log(`Anomalie détectée : l'enregistrement a été interrompu prématurément (${elapsedTime}s au lieu de ${dureeRestante}s). Relance...`);
+            tempsRestant = Math.floor((dateFin - Date.now()) / 1000);
+
             if (elapsedTime > 10) {
-                retryCounters.set(chaine, 0);
-                tempsRestant = Math.floor((dateFin - Date.now()) / 1000);
-                startRecording(abonnement, tempsRestant, chaine, nom_fichier, dateFin);
+                retryCounters.set(chaine, 0);                
+                startRecording(abonnement, tempsRestant, chaine, nom_fichier, dateFin, liste);
             } else {
                 let nextRetry = retryDelays[Math.min(retryCount, retryDelays.length - 1)];
-                log(`⚠️ Échec rapide détecté pour ${chaine} (${elapsedTime}s). Nouvelle tentative dans ${nextRetry}s.`);
-    
-                retryCounters.set(chaine, retryCount + 1);
-    
-                tempsRestant = Math.floor((dateFin - Date.now()) / 1000) - nextRetry;
-                setTimeout(() => {
-                    startRecording(abonnement, tempsRestant, chaine, nom_fichier, dateFin);
-                }, nextRetry * 1000);
+                retryCounters.set(chaine, retryCount + 1);        
+
+                if (retryCount >= retryDelays.length - 1 && (liste === 'chaines' && abonnementData.backup && abonnementData.backup[chaine] || liste === 'backup' && abonnementData.backup2 && abonnementData.backup2[chaine])) {
+                    if (liste === 'chaines') {
+                        listeSuivante = 'backup';
+                    } else {
+                        listeSuivante = 'backup2';
+                    }
+                    log(`${retryCount} tentatives infructueuses, on bascule sur les chaines du ${listeSuivante}`);
+                    retryCounters.set(chaine, 0);
+                    startRecording(abonnement, tempsRestant, chaine, nom_fichier, dateFin, listeSuivante);
+                } else {
+                    log(`⚠️ Échec rapide détecté pour ${chaine} (${elapsedTime}s). Nouvelle tentative dans ${nextRetry}s.`);
+                    setTimeout(() => {
+                        startRecording(abonnement, tempsRestant, chaine, nom_fichier, dateFin, liste);
+                    }, nextRetry * 1000);
+                }    
             }
         } else {
             log(`Enregistrement terminé correctement pour ${chaine}.`);

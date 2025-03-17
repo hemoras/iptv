@@ -6,6 +6,16 @@
             "C+UHD": "http://lien1",
             "C+": "http://lien12",
             "C+Sport": "http://lien3"
+        },
+        "backup": {
+            "C+UHD": "http://lien4",
+            "C+": "http://lien15",
+            "C+Sport": "http://lien6"
+        },
+        "backup2": {
+            "C+UHD": "http://lien7",
+            "C+": "http://lien18",
+            "C+Sport": "http://lien9"
         }
     },
     {
