@@ -9,7 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "fast-csv": "^5.0.2",
     "fs": "^0.0.1-security",
+    "mediainfo-wrapper": "^1.2.0",
     "mysql": "^2.18.1"
   }
 }
